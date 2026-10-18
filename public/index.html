@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rama Market</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: var(--tg-theme-bg-color, #f3f4f6);
+      --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+      --text-primary: var(--tg-theme-text-color, #1f2937);
+      --text-secondary: var(--tg-theme-hint-color, #6b7280);
+      --accent-color: var(--tg-theme-button-color, #2563eb);
+      --accent-text: var(--tg-theme-button-text-color, #ffffff);
+      --price-color: var(--tg-theme-link-color, #059669);
+      --border-color: var(--tg-theme-hint-color, #e5e7eb);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-color); color: var(--text-primary);
+      transition: background-color .3s, color .3s;
+    }
+    header { text-align: center; margin-bottom: 24px; }
+    h1 { margin: 0; font-size: 1.5rem; font-weight: 700; }
+    .subtitle { color: var(--text-secondary); font-size: .875rem; margin-top: 4px; }
+
+    /* Responsive grid: cards wrap automatically */
+    #app {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+    .card {
+      min-width: 0; width: 100%; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--card-bg);
+      border: 1px solid var(--border-color); border-radius: 12px;
+      padding: 12px; margin: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+      transition: transform .2s ease;
+    }
+    .card:active { transform: scale(.98); }
+    .product-image {
+      display: block; width: 100%; height: 145px; flex: 0 0 145px;
+      object-fit: cover; border-radius: 8px; margin: 0 0 10px;
+      background: var(--bg-color);
+    }
+    video.product-image { object-fit: cover; }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 6px; min-width: 0; margin-bottom: 8px;
+    }
+    .title {
+      min-width: 0; margin: 0; padding: 0; font-size: 1rem;
+      font-weight: 600; line-height: 1.35; overflow-wrap: anywhere;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .media-badge {
+      flex-shrink: 0; background: var(--accent-color); color: var(--accent-text);
+      font-size: .65rem; padding: 3px 6px; border-radius: 999px;
+      font-weight: 600; white-space: nowrap;
+    }
+    .price {
+      margin: 8px 0; color: var(--price-color); font-size: 1.1rem;
+      line-height: 1.25; font-weight: 800; overflow-wrap: anywhere;
+    }
+    .price.not-specified {
+      font-size: .875rem; font-weight: 400;
+      color: var(--text-secondary); font-style: italic;
+    }
+    .snippet {
+      margin: 0 0 12px; color: var(--text-secondary); font-size: .8rem;
+      line-height: 1.4; overflow-wrap: anywhere;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-footer {
+      display: flex; flex-direction: column; align-items: stretch;
+      gap: 10px; margin-top: auto; padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+    }
+    .meta {
+      display: flex; flex-wrap: wrap; align-items: center;
+      gap: 8px; color: var(--text-secondary); font-size: .68rem;
+    }
+    .btn {
+      display: block; width: 100%; max-width: 100%; padding: 9px 8px;
+      border-radius: 8px; background: var(--accent-color); color: var(--accent-text);
+      text-align: center; text-decoration: none; font-size: .75rem;
+      line-height: 1.25; font-weight: 600; overflow-wrap: anywhere;
+      transition: opacity .2s;
+    }
+    .btn:active { opacity: .8; }
+    .state-message {
+      grid-column: 1 / -1; text-align: center;
+      padding: 40px 20px; color: var(--text-secondary);
+    }
+    .error { color: #dc2626; background: rgba(220,38,38,.1); border-radius: 8px; padding: 16px; }
+    @media (min-width: 600px) {
+      #app { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+      .product-image { height: 175px; flex-basis: 175px; }
+      .card { padding: 14px; }
+      .title { font-size: 1.05rem; }
+      .price { font-size: 1.2rem; }
+    }
+    @media (min-width: 900px) {
+      #app { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 340px) {
+      body { padding: 10px; }
+      #app { gap: 8px; }
+      .card { padding: 8px; }
+      .product-image { height: 110px; flex-basis: 110px; }
+      .title { font-size: .9rem; }
+      .price { font-size: 1rem; }
+      .btn { font-size: .68rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛒 ET-Telegram Market</h1>
+    <div class="subtitle">Latest Deals &amp; Products</div>
+  </header>
+
+  <main id="app" aria-live="polite" aria-busy="true">
+    <div class="state-message">Loading products...</div>
+  </main>
+
+  <script>
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    async function loadPosts() {
+      const app = document.getElementById('app');
+      app.setAttribute('aria-busy', 'true');
+
+      try {
+        const response = await fetch('/api/posts');
+        if (!response.ok) throw new Error(`Failed to fetch data (${response.status})`);
+
+        const data = await response.json();
+        if (!data.success || !Array.isArray(data.data)) {
+          throw new Error(data.message || 'Invalid data format');
+        }
+
+        app.replaceChildren();
+        if (data.data.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'state-message';
+          empty.textContent = 'No products found.';
+          app.appendChild(empty);
+          return;
+        }
+
+        data.data.forEach(post => {
+          const card = document.createElement('article');
+          card.className = 'card';
+
+          if (post.hasMedia) {
+            const media = document.createElement(post.isVideo ? 'video' : 'img');
+            media.className = 'product-image';
+            media.src = `/api/media/${encodeURIComponent(post.id)}?channel=${encodeURIComponent(post.channel)}`;
+            media.alt = String(post.title || 'Product image');
+            media.loading = 'lazy';
+
+            if (post.isVideo) {
+              media.autoplay = true;
+              media.loop = true;
+              media.muted = true;
+              media.playsInline = true;
+              media.controls = true;
+            }
+            media.addEventListener('error', () => media.remove(), { once: true });
+            card.appendChild(media);
+          }
+
+          const cardHeader = document.createElement('div');
+          cardHeader.className = 'card-header';
+
+          const title = document.createElement('h2');
+          title.className = 'title';
+          title.textContent = String(post.title || 'Untitled Product');
+          cardHeader.appendChild(title);
+
+          if (post.hasMedia) {
+            const badge = document.createElement('span');
+            badge.className = 'media-badge';
+            badge.textContent = post.isVideo ? '🎥 Video' : '📷 Media';
+            cardHeader.appendChild(badge);
+          }
+
+          const price = document.createElement('div');
+          price.className = post.price === 'Not specified' ? 'price not-specified' : 'price';
+          price.textContent = post.price === 'Not specified' || !post.price
+            ? 'Price not specified' : String(post.price);
+
+          const snippet = document.createElement('p');
+          snippet.className = 'snippet';
+          snippet.textContent = String(post.snippet || '');
+
+          const footer = document.createElement('div');
+          footer.className = 'card-footer';
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          const views = document.createElement('span');
+          views.textContent = `👁️ ${Number(post.views || 0).toLocaleString()}`;
+
+          const date = document.createElement('span');
+          const parsedDate = new Date(post.date);
+          date.textContent = `🕒 ${Number.isNaN(parsedDate.getTime()) ? 'Date unavailable' : parsedDate.toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
+          })}`;
+          meta.append(views, date);
+
+          const link = document.createElement('a');
+          link.className = 'btn';
+          link.textContent = 'View on Telegram ↗';
+          link.href = typeof post.link === 'string' ? post.link : '#';
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+
+          footer.append(meta, link);
+          card.append(cardHeader, price, snippet, footer);
+          app.appendChild(card);
+        });
+      } catch (error) {
+        console.error('Error loading posts:', error);
+        const state = document.createElement('div');
+        state.className = 'state-message error';
+
+        const heading = document.createElement('strong');
+        heading.textContent = 'Error loading data';
+
+        const message = document.createElement('p');
+        message.textContent = error instanceof Error ? error.message : 'Unknown error';
+
+        const hint = document.createElement('small');
+        hint.textContent = 'Make sure the backend server is running.';
+
+        state.append(heading, message, hint);
+        app.replaceChildren(state);
+      } finally {
+        app.setAttribute('aria-busy', 'false');
+      }
+    }
+
+    loadPosts();
+  </script>
+</body>
+</html>
